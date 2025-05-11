@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mis Tareas</title>
+
+  <!-- Web App Manifest & PWA meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4a90e2" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 1rem;
+      background: white;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      color: #4a90e2;
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 1rem;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tab.active {
+      border-bottom: 3px solid #4a90e2;
+      color: #4a90e2;
+    }
+    .input-group {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+    .input-group input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px 0 0 4px;
+    }
+    .input-group button {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #4a90e2;
+      color: white;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+    }
+    li.hecha span {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+    li button {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mis Tareas</h1>
+
+    <div class="tabs">
+      <div class="tab active" onclick="cambiarCategoria('Trabajo')">Trabajo</div>
+      <div class="tab" onclick="cambiarCategoria('Hogar')">Hogar</div>
+      <div class="tab" onclick="cambiarCategoria('Personal')">Personal</div>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="nuevaTarea" placeholder="Escribe una tarea...">
+      <button onclick="agregarTarea()">Añadir</button>
+    </div>
+
+    <ul id="listaTareas"></ul>
+  </div>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+  </script>
+
+  <!-- App logic -->
+  <script>
+    let categoriaActual = 'Trabajo';
+    let tareas = JSON.parse(localStorage.getItem('tareasPorCategoria')) || {
+      Trabajo: [],
+      Hogar: [],
+      Personal: []
+    };
+
+    function guardarTareas() {
+      localStorage.setItem('tareasPorCategoria', JSON.stringify(tareas));
+    }
+
+    function renderizarTareas() {
+      const lista = document.getElementById('listaTareas');
+      lista.innerHTML = '';
+      tareas[categoriaActual].forEach((tarea, index) => {
+        const li = document.createElement('li');
+        li.className = tarea.hecha ? 'hecha' : '';
+        li.innerHTML = `
+          <span onclick="toggleTarea(${index})">${tarea.texto}</span>
+          <button onclick="eliminarTarea(${index})">✕</button>
+        `;
+        lista.appendChild(li);
+      });
+    }
+
+    function agregarTarea() {
+      const input = document.getElementById('nuevaTarea');
+      const texto = input.value.trim();
+      if (texto) {
+        tareas[categoriaActual].push({ texto, hecha: false });
+        input.value = '';
+        guardarTareas();
+        renderizarTareas();
+      }
+    }
+
+    function toggleTarea(index) {
+      tareas[categoriaActual][index].hecha = !tareas[categoriaActual][index].hecha;
+      guardarTareas();
+      renderizarTareas();
+    }
+
+    function eliminarTarea(index) {
+      tareas[categoriaActual].splice(index, 1);
+      guardarTareas();
+      renderizarTareas();
+    }
+
+    function cambiarCategoria(nueva) {
+      categoriaActual = nueva;
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.textContent === nueva);
+      });
+      renderizarTareas();
+    }
+
+    renderizarTareas();
+  </script>
+</body>
+</html>
